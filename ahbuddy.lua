@@ -19,6 +19,9 @@ local defaults = {
     base_ip = '124.150.154.61',
     -- Seconds to wait on each step of a query (connect, send, reply).
     timeout = 8,
+    -- How many of the most recent sales to show for each form. The server
+    -- sends at most ten.
+    results = 3,
     -- Also print the fields of each reply that are not shown normally.
     debug = false,
 }
@@ -276,19 +279,21 @@ local function fetch_history(ip, port, item_id, stack)
     return ss.parse_history(reply)
 end
 
--- Print one form's sales, newest first, with the price range.
+-- Print one form's most recent sales, newest first, with their price range.
 local function report_sales(label, history)
-    if #history.sales == 0 then
+    local total = #history.sales
+    if total == 0 then
         say(('  %s: no recent sales'):format(label))
         return
     end
+    local first = math.max(1, total - settings.results + 1)
     local low, high = math.huge, 0
-    for _, sale in ipairs(history.sales) do
-        low = math.min(low, sale.price)
-        high = math.max(high, sale.price)
+    for i = first, total do
+        low = math.min(low, history.sales[i].price)
+        high = math.max(high, history.sales[i].price)
     end
-    say(('  %s: last %d sales, %s - %s gil'):format(label, #history.sales, gil(low), gil(high)))
-    for i = #history.sales, 1, -1 do
+    say(('  %s: last %d sales, %s - %s gil'):format(label, total - first + 1, gil(low), gil(high)))
+    for i = total, first, -1 do
         local sale = history.sales[i]
         say(('    %s  %10s  %s -> %s'):format(date(sale.date), gil(sale.price), sale.seller, sale.buyer))
     end
@@ -377,6 +382,7 @@ local help_text = [[
 ahbuddy commands:
   //ahbuddy <item name>       Stock and recent sales for an item, from your
                               world's search server. Partial names work.
+  //ahbuddy results [n]       Show or set how many sales to list per form (1-10).
   //ahbuddy server [ip|auto]  Show or set the search server to ask.
   //ahbuddy debug [on|off]    Show or set extra reply details.
   //ahbuddy help              Show this help.
@@ -403,6 +409,18 @@ windower.register_event('addon command', function(...)
         else
             say('Server: ' .. port)
         end
+    elseif cmd == 'results' then
+        local value = args[2]
+        if value then
+            local n = tonumber(value)
+            if not n or n ~= math.floor(n) or n < 1 or n > 10 then
+                error('results expects a whole number from 1 to 10.')
+                return
+            end
+            settings.results = n
+            config.save(settings)
+        end
+        say(('Results: %d per form'):format(settings.results))
     elseif cmd == 'debug' then
         local value = args[2] and args[2]:lower()
         if value == 'on' or value == 'off' then
