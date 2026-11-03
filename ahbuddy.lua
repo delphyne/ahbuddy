@@ -1,7 +1,7 @@
 _addon.name = 'ahbuddy'
 _addon.author = 'Mithrael@Quezacoatl'
 _addon.version = '0.1.0'
-_addon.command = 'ahbuddy'
+_addon.commands = {'ahbuddy', 'ah'}
 
 require('logger')
 local config = require('config')

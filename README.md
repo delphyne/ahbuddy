@@ -40,6 +40,8 @@ in-game AH shows, fetched from the same place the game fetches it.
 
 ## Commands
 
+`//ah` is a short alias for `//ahbuddy` in every command below.
+
 ```
 //ahbuddy <item name>
 ```
