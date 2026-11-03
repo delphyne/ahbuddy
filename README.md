@@ -17,6 +17,10 @@ in-game AH shows, fetched from the same place the game fetches it.
   several items match, it lists them so you can be more specific.
 - **Reports stock.** The number for sale on your world right now, as singles
   and, for stackable items, as stacks.
+- **Says where to find it.** The AH menu path, such as `Items > Crystals`,
+  and which page of that list the item is on, from the same listing the game
+  shows. The page math assumes the list shows seven rows; `//ahbuddy
+  pagesize <n>` corrects it, and `0` turns the page lookup off.
 - **Reports price history.** The most recent sales of each form, newest
   first, with the price range across them. Three by default; `//ahbuddy
   results <n>` shows up to the ten the server keeps.
@@ -50,6 +54,7 @@ Looks the item up. Names with spaces do not need quotes.
 
 ```
 //ahbuddy results [n]          Show or set how many sales to list per form (1-10).
+//ahbuddy pagesize [n]         Show or set rows per page of the AH list; 0 turns the page report off.
 //ahbuddy server             Show the search server that will be asked.
 //ahbuddy server <ip[:port]> Ask this server instead of your world's.
 //ahbuddy server auto        Go back to picking the server from your world.
@@ -69,6 +74,8 @@ first time the addon loads.
   Only this needs changing if Square Enix moves the block.
 - `timeout`: seconds to wait on each network step.
 - `results`: how many of the most recent sales to show per form, 1 to 10.
+- `page_size`: rows per page of the game's AH list, for the page report. 0 skips
+  the listing query altogether.
 - `debug`: print the AH category number with each lookup.
 
 ## How it works

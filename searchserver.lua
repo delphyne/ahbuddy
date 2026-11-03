@@ -383,7 +383,8 @@ end
 -- Parse one page of a listing reply. Returns a table:
 --   total (items in the category), last (bool, no more pages),
 --   items = { [item_id] = {single = n, stack = n} } with M.NONE for a form
---   the item is never sold in
+--   the item is never sold in, order = { item_id, ... } in the order the
+--   server (and so the game's AH list) presents them
 -- or nil and a reason.
 function M.parse_list(data)
     local buf, length = open(data)
@@ -397,6 +398,7 @@ function M.parse_list(data)
         total = get16(buf, 0x0E),
         last = get8(buf, 0x0A) == 0x80,
         items = {},
+        order = {},
     }
     local payload_end = get16(buf, 0x08)
     local count = math.max(0, math.floor((payload_end - 0x18) / 10))
@@ -405,7 +407,9 @@ function M.parse_list(data)
         if o + 10 > length then
             break
         end
-        result.items[get16(buf, o)] = {
+        local id = get16(buf, o)
+        result.order[#result.order + 1] = id
+        result.items[id] = {
             single = get32(buf, o + 2),
             stack = get32(buf, o + 6),
         }

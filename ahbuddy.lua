@@ -22,6 +22,9 @@ local defaults = {
     -- How many of the most recent sales to show for each form. The server
     -- sends at most ten.
     results = 3,
+    -- Rows the game's AH list shows per page, used to say which page an item
+    -- is on. 0 skips the page lookup, which costs one more query.
+    page_size = 7,
     -- Also print the fields of each reply that are not shown normally.
     debug = false,
 }
@@ -50,6 +53,31 @@ local categories = {
     [57] = 'Sweets', [58] = 'Drinks', [59] = 'Ingredients', [60] = 'Dice', [61] = 'Automaton',
     [62] = 'Grips', [63] = 'Alchemy 2', [64] = 'Misc. 2', [65] = 'Misc. 3',
 }
+
+-- The top-level AH menu each category sits under.
+local groups = {}
+for group, members in pairs({
+    Weapons = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 62},
+    Armor = {16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26},
+    Scrolls = {28, 29, 30, 31, 32, 45},
+    Medicines = {33},
+    Items = {34, 35, 36, 37, 60, 61, 48, 49, 46, 64, 65},
+    Materials = {38, 39, 40, 41, 42, 43, 44, 63, 47, 50},
+    Food = {51, 52, 53, 54, 55, 56, 57, 58, 59},
+}) do
+    for _, category in ipairs(members) do
+        groups[category] = group
+    end
+end
+
+-- "Items > Crystals", or just the number when the category is unknown.
+local function category_path(category)
+    local name = categories[category]
+    if not name then
+        return ('category %d'):format(category)
+    end
+    return groups[category] and (groups[category] .. ' > ' .. name) or name
+end
 
 math.randomseed(os.time())
 
@@ -279,6 +307,67 @@ local function fetch_history(ip, port, item_id, stack)
     return ss.parse_history(reply)
 end
 
+-- Every item in a category in the order the game's AH list shows them,
+-- paging through the listing on a single connection. Returns the array of
+-- item ids, or nil and a reason.
+local function fetch_listing(ip, port, category)
+    local sock, err = connect(ip, port)
+    if not sock then
+        return nil, err
+    end
+    local order = {}
+    local request = ss.list_request(category)
+    for _ = 1, 80 do
+        local ok
+        ok, err = send_all(sock, request)
+        if not ok then
+            sock:close()
+            return nil, err
+        end
+        local reply
+        reply, err = receive_packet(sock)
+        if not reply then
+            sock:close()
+            return nil, err
+        end
+        local page
+        page, err = ss.parse_list(reply)
+        if not page then
+            sock:close()
+            return nil, err
+        end
+        for _, id in ipairs(page.order) do
+            order[#order + 1] = id
+        end
+        if page.last or #page.order == 0 then
+            break
+        end
+        request = ss.more_request()
+    end
+    sock:close()
+    return order
+end
+
+-- Say where in the game's AH list an item sits: its category's menu path and
+-- the page it is on.
+local function report_page(ip, port, item, category)
+    local order, err = fetch_listing(ip, port, category)
+    if not order then
+        say(('  Page lookup failed: %s'):format(err))
+        return
+    end
+    for position, id in ipairs(order) do
+        if id == item.id then
+            local pages = math.ceil(#order / settings.page_size)
+            local page = math.ceil(position / settings.page_size)
+            say(('  Listed under %s, page %d of %d (item %d of %d)'):format(
+                category_path(category), page, pages, position, #order))
+            return
+        end
+    end
+    say(('  Not found in the %s listing (%d items).'):format(category_path(category), #order))
+end
+
 -- Print one form's most recent sales, newest first, with their price range.
 local function report_sales(label, history)
     local total = #history.sales
@@ -328,11 +417,15 @@ local function lookup(item)
         end
     end
 
-    local where = categories[single.category] and (' in %s'):format(categories[single.category]) or ''
     if stack then
-        say(('  For sale%s: %d singles, %d stacks'):format(where, single.stock, stack.stock))
+        say(('  For sale: %d singles, %d stacks'):format(single.stock, stack.stock))
     else
-        say(('  For sale%s: %d'):format(where, single.stock))
+        say(('  For sale: %d'):format(single.stock))
+    end
+    if settings.page_size > 0 then
+        report_page(ip, port, item, single.category)
+    else
+        say(('  Listed under %s'):format(category_path(single.category)))
     end
     if settings.debug then
         say(('  (category %d)'):format(single.category))
@@ -383,6 +476,8 @@ ahbuddy commands:
   //ahbuddy <item name>       Stock and recent sales for an item, from your
                               world's search server. Partial names work.
   //ahbuddy results [n]       Show or set how many sales to list per form (1-10).
+  //ahbuddy pagesize [n]      Show or set rows per page of the game's AH list,
+                              for the page report; 0 turns the report off.
   //ahbuddy server [ip|auto]  Show or set the search server to ask.
   //ahbuddy debug [on|off]    Show or set extra reply details.
   //ahbuddy help              Show this help.
@@ -421,6 +516,22 @@ windower.register_event('addon command', function(...)
             config.save(settings)
         end
         say(('Results: %d per form'):format(settings.results))
+    elseif cmd == 'pagesize' then
+        local value = args[2]
+        if value then
+            local n = tonumber(value)
+            if not n or n ~= math.floor(n) or n < 0 or n > 50 then
+                error('pagesize expects a whole number from 0 to 50.')
+                return
+            end
+            settings.page_size = n
+            config.save(settings)
+        end
+        if settings.page_size > 0 then
+            say(('Page size: %d rows'):format(settings.page_size))
+        else
+            say('Page size: 0 (page report off)')
+        end
     elseif cmd == 'debug' then
         local value = args[2] and args[2]:lower()
         if value == 'on' or value == 'off' then
