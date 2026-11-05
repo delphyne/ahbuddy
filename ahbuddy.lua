@@ -155,9 +155,15 @@ end
 --------------------------------------------------------------------------------
 
 -- Items whose name matches the query: exact (short or long name,
--- case-insensitive) first; failing that, names containing the query.
+-- case-insensitive) first; failing that, names containing the query. A query
+-- that is only digits is an item id, which picks out one item when several
+-- share a name; the ambiguity list prints each item's id for this.
 local function find_items(query)
     query = query:lower()
+    if query:match('^%d+$') then
+        local item = res.items[tonumber(query)]
+        return item and item.en and {item} or {}
+    end
     local exact, partial = {}, {}
     for _, item in pairs(res.items) do
         local en, enl = item.en, item.enl
@@ -473,8 +479,9 @@ end)
 
 local help_text = [[
 ahbuddy commands:
-  //ahbuddy <item name>       Stock and recent sales for an item, from your
-                              world's search server. Partial names work.
+  //ahbuddy <item name|id>    Stock and recent sales for an item, from your
+                              world's search server. Partial names work; an
+                              item id picks one of several with the same name.
   //ahbuddy results [n]       Show or set how many sales to list per form (1-10).
   //ahbuddy pagesize [n]      Show or set rows per page of the game's AH list,
                               for the page report; 0 turns the report off.
@@ -550,7 +557,7 @@ windower.register_event('addon command', function(...)
         elseif #found == 1 then
             start(lookup, found[1])
         else
-            say(('%d items match "%s"; be more specific:'):format(#found, query))
+            say(('%d items match "%s"; be more specific, or use the id:'):format(#found, query))
             for i = 1, math.min(#found, 10) do
                 say(('  %s (%d)'):format(found[i].en, found[i].id))
             end

@@ -14,7 +14,9 @@ in-game AH shows, fetched from the same place the game fetches it.
 - **Looks an item up by name.** `//ahbuddy fire crystal` finds the item in
   the game's own item list. Short and long names both work, case does not
   matter, and a partial name works when it matches only one item. When
-  several items match, it lists them so you can be more specific.
+  several items match, it lists them with their item ids so you can be more
+  specific. Some items share a name exactly; `//ahbuddy 4429` looks one up
+  by the id shown in that list.
 - **Reports stock.** The number for sale on your world right now, as singles
   and, for stackable items, as stacks.
 - **Says where to find it.** The AH menu path, such as `Items > Crystals`,
@@ -48,9 +50,12 @@ in-game AH shows, fetched from the same place the game fetches it.
 
 ```
 //ahbuddy <item name>
+//ahbuddy <item id>
 ```
 
-Looks the item up. Names with spaces do not need quotes.
+Looks the item up. Names with spaces do not need quotes. When several items
+share the name, the list it prints shows each one's id; give that id instead
+to pick one.
 
 ```
 //ahbuddy results [n]          Show or set how many sales to list per form (1-10).
@@ -100,3 +105,15 @@ mirrors retail, and the retail specifics were worked out by
   override.
 - The search server only knows items that can be sold on the AH. Anything
   else comes back with no stock and no sales.
+
+## Development
+
+The code runs under Windower's Lua 5.1, so LuaJIT stands in for it outside
+the game. From the addon directory:
+
+```
+luacheck .                      # lint (settings in .luacheckrc)
+luajit test/test_ahbuddy.lua    # command handling, with Windower stubbed
+```
+
+Both come from Homebrew: `brew install luajit luacheck`.
