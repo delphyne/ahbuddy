@@ -40,6 +40,17 @@ in-game AH shows, fetched from the same place the game fetches it.
 1. Download or clone this repository into your Windower addons folder so that
    the file lives at `Windower/addons/ahbuddy/ahbuddy.lua`. The other `.lua`
    files in the folder must come with it.
+
+   On Linux with Windower under the Lumoria flatpak, or under plain Wine,
+   `make install` from a clone does this for you: it finds the Windower
+   folder and symlinks the clone into `addons/`, so later `git pull`s need
+   only a reload in game. If it cannot find Windower, tell it where:
+
+   ```
+   make install WINDOWER=/path/to/Windower4
+   ```
+
+   `make uninstall` removes the link again.
 2. In game, load the addon:
 
    ```
@@ -117,6 +128,8 @@ the game. From the addon directory:
 ```
 luacheck .                      # lint (settings in .luacheckrc)
 luajit test/test_ahbuddy.lua    # command handling, with Windower stubbed
+make check                      # both
 ```
 
-Both come from Homebrew: `brew install luajit luacheck`.
+Both tools come from Homebrew (`brew install luajit luacheck`) or your
+distribution's packages.
