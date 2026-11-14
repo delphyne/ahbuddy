@@ -15,8 +15,10 @@ in-game AH shows, fetched from the same place the game fetches it.
   the game's own item list. Short and long names both work, case does not
   matter, and a partial name works when it matches only one item. When
   several items match, it lists them with their item ids so you can be more
-  specific. Some items share a name exactly; `//ahbuddy 4429` looks one up
-  by the id shown in that list.
+  specific. Many fish and some other items exist twice under one name, one
+  form the Auction House sells and one it refuses; the refused form is
+  skipped, so the name alone finds the right one. Where names really do
+  clash, `//ahbuddy 4429` looks one up by the id shown in that list.
 - **Reports stock.** The number for sale on your world right now, as singles
   and, for stackable items, as stacks.
 - **Says where to find it.** The AH menu path, such as `Items > Crystals`,
@@ -53,9 +55,10 @@ in-game AH shows, fetched from the same place the game fetches it.
 //ahbuddy <item id>
 ```
 
-Looks the item up. Names with spaces do not need quotes. When several items
-share the name, the list it prints shows each one's id; give that id instead
-to pick one.
+Looks the item up. Names with spaces do not need quotes. Items the Auction
+House refuses are skipped when a sellable item has the same name. When
+several items still share the name, the list it prints shows each one's id;
+give that id instead to pick one.
 
 ```
 //ahbuddy results [n]          Show or set how many sales to list per form (1-10).

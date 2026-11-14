@@ -154,10 +154,22 @@ end
 -- Item lookup
 --------------------------------------------------------------------------------
 
+-- The game marks items the Auction House refuses with this bit in the item
+-- flags that Windower's item table carries. Many fish and some other items
+-- exist twice under one name, one form sellable and one not (quest or
+-- fishing-contest versions); this bit tells them apart.
+local NO_AUCTION = 0x0040
+
+local function sellable(item)
+    return math.floor((item.flags or 0) / NO_AUCTION) % 2 == 0
+end
+
 -- Items whose name matches the query: exact (short or long name,
--- case-insensitive) first; failing that, names containing the query. A query
--- that is only digits is an item id, which picks out one item when several
--- share a name; the ambiguity list prints each item's id for this.
+-- case-insensitive) first; failing that, names containing the query. Items
+-- the Auction House refuses are dropped when at least one match is sellable,
+-- so a name shared by a sellable and an unsellable form is not ambiguous. A
+-- query that is only digits is an item id, which picks out one item exactly;
+-- the ambiguity list prints each item's id for this.
 local function find_items(query)
     query = query:lower()
     if query:match('^%d+$') then
@@ -177,6 +189,15 @@ local function find_items(query)
         end
     end
     local found = #exact > 0 and exact or partial
+    local listed = {}
+    for _, item in ipairs(found) do
+        if sellable(item) then
+            listed[#listed + 1] = item
+        end
+    end
+    if #listed > 0 then
+        found = listed
+    end
     table.sort(found, function(a, b)
         return a.id < b.id
     end)

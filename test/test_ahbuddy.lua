@@ -34,6 +34,13 @@ package.preload['resources'] = function()
             [4429] = {id = 4429, en = 'Black Eel', enl = 'black eels', stack = 12},
             [5788] = {id = 5788, en = 'Black Eel', enl = 'black eel', stack = 1},
             [4484] = {id = 4484, en = 'Eel Kabob', enl = 'eel kabobs', stack = 12},
+            -- Giant Catfish as the real table has it: the second form carries
+            -- the No Auction flag (0x0040).
+            [4469] = {id = 4469, en = 'Giant Catfish', enl = 'giant catfish', flags = 1544, stack = 1},
+            [5799] = {id = 5799, en = 'Giant Catfish', enl = 'giant catfish', flags = 13896, stack = 1},
+            -- Both forms unsellable.
+            [7001] = {id = 7001, en = 'Contest Trout', enl = 'contest trout', flags = 13896, stack = 1},
+            [7002] = {id = 7002, en = 'Contest Trout', enl = 'contest trout', flags = 13896, stack = 1},
             [9999] = {id = 9999},  -- an entry with no name, as the real table has
         },
         servers = {[1] = {en = 'Quezacoatl'}},
@@ -107,6 +114,23 @@ check('ambiguous partial name lists ids', run('eel'),
     '[ahbuddy]   Black Eel (4429)',
     '[ahbuddy]   Eel Kabob (4484)',
     '[ahbuddy]   Black Eel (5788)')
+
+check('unsellable twin is skipped', run('giant', 'catfish'),
+    '[ahbuddy] Giant Catfish (4469) on 127.0.0.1...',
+    '[ahbuddy] Lookup failed: connect failed: refused')
+
+check('partial match skips the unsellable twin', run('catfish'),
+    '[ahbuddy] Giant Catfish (4469) on 127.0.0.1...',
+    '[ahbuddy] Lookup failed: connect failed: refused')
+
+check('id still reaches the unsellable twin', run('5799'),
+    '[ahbuddy] Giant Catfish (5799) on 127.0.0.1...',
+    '[ahbuddy] Lookup failed: connect failed: refused')
+
+check('all unsellable stays ambiguous', run('contest', 'trout'),
+    '[ahbuddy] 2 items match "contest trout"; be more specific, or use the id:',
+    '[ahbuddy]   Contest Trout (7001)',
+    '[ahbuddy]   Contest Trout (7002)')
 
 check('id picks the first Black Eel', run('4429'),
     '[ahbuddy] Black Eel (4429) on 127.0.0.1...',
