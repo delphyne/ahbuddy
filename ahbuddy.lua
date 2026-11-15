@@ -154,14 +154,21 @@ end
 -- Item lookup
 --------------------------------------------------------------------------------
 
--- The game marks items the Auction House refuses with this bit in the item
--- flags that Windower's item table carries. Many fish and some other items
--- exist twice under one name, one form sellable and one not (quest or
--- fishing-contest versions); this bit tells them apart.
+-- The game marks items the Auction House refuses with a flag. Many fish and
+-- some other items exist twice under one name, one form sellable and one not
+-- (quest or fishing-contest versions); the flag tells them apart. Windower's
+-- resources library turns each item's flags integer into a set of flag names,
+-- so in game item.flags is a table; a raw res/items.lua table still carries
+-- the integer, so the bit is checked when given a number.
 local NO_AUCTION = 0x0040
+local NO_AUCTION_NAME = 'No Auction'
 
 local function sellable(item)
-    return math.floor((item.flags or 0) / NO_AUCTION) % 2 == 0
+    local flags = item.flags
+    if type(flags) == 'table' then
+        return not flags[NO_AUCTION_NAME]
+    end
+    return math.floor((flags or 0) / NO_AUCTION) % 2 == 0
 end
 
 -- Items whose name matches the query: exact (short or long name,

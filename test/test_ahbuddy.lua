@@ -34,13 +34,21 @@ package.preload['resources'] = function()
             [4429] = {id = 4429, en = 'Black Eel', enl = 'black eels', stack = 12},
             [5788] = {id = 5788, en = 'Black Eel', enl = 'black eel', stack = 1},
             [4484] = {id = 4484, en = 'Eel Kabob', enl = 'eel kabobs', stack = 12},
+            -- Windower's resources library turns the flags integer into a set
+            -- of flag names, so in game flags is a table like this one.
+            [812] = {id = 812, en = 'Deathstone', enl = 'deathstone', stack = 12,
+                flags = {['Obtainable from Goblin Box'] = true}},
             -- Giant Catfish as the real table has it: the second form carries
-            -- the No Auction flag (0x0040).
-            [4469] = {id = 4469, en = 'Giant Catfish', enl = 'giant catfish', flags = 1544, stack = 1},
-            [5799] = {id = 5799, en = 'Giant Catfish', enl = 'giant catfish', flags = 13896, stack = 1},
-            -- Both forms unsellable.
-            [7001] = {id = 7001, en = 'Contest Trout', enl = 'contest trout', flags = 13896, stack = 1},
-            [7002] = {id = 7002, en = 'Contest Trout', enl = 'contest trout', flags = 13896, stack = 1},
+            -- the No Auction flag.
+            [4469] = {id = 4469, en = 'Giant Catfish', enl = 'giant catfish', stack = 1,
+                flags = {['Usable inside Mog Garden'] = true, ['No NPC Sale'] = true}},
+            [5799] = {id = 5799, en = 'Giant Catfish', enl = 'giant catfish', stack = 1,
+                flags = {['Usable inside Mog Garden'] = true, ['No Auction'] = true, ['No NPC Sale'] = true}},
+            -- Both forms unsellable, one with the raw integer flags of
+            -- res/items.lua (0x0040 set) to cover that shape too.
+            [7001] = {id = 7001, en = 'Contest Trout', enl = 'contest trout', stack = 1,
+                flags = {['No Auction'] = true}},
+            [7002] = {id = 7002, en = 'Contest Trout', enl = 'contest trout', stack = 1, flags = 13896},
             [9999] = {id = 9999},  -- an entry with no name, as the real table has
         },
         servers = {[1] = {en = 'Quezacoatl'}},
@@ -114,6 +122,10 @@ check('ambiguous partial name lists ids', run('eel'),
     '[ahbuddy]   Black Eel (4429)',
     '[ahbuddy]   Eel Kabob (4484)',
     '[ahbuddy]   Black Eel (5788)')
+
+check('flag set from the resources library is handled', run('deathstone'),
+    '[ahbuddy] Deathstone (812) on 127.0.0.1...',
+    '[ahbuddy] Lookup failed: connect failed: refused')
 
 check('unsellable twin is skipped', run('giant', 'catfish'),
     '[ahbuddy] Giant Catfish (4469) on 127.0.0.1...',
